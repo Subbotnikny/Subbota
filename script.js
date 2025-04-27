@@ -131,12 +131,123 @@ function closeModal() {
 
 // Открытие модального окна с информацией о мероприятии
 function openEventInfoModal(index) {
+    const events = JSON.parse(localStorage.getItem("events")) || [];
     const event = events[index];
-    document.getElementById("event-info-name").textContent = event.name;
-    document.getElementById("event-info-date").textContent = `Дата: ${event.date}`;
-    document.getElementById("event-info-time").textContent = `Время: ${event.time}`;
-    document.getElementById("event-info-description").textContent = event.description;
-    document.getElementById("event-info-modal").style.display = "block";
+    
+    if (!event) {
+        console.error("Мероприятие не найдено");
+        return;
+    }
+
+    const eventNameElement = document.getElementById("event-info-name");
+    if (eventNameElement) {
+        eventNameElement.textContent = event.name;
+        console.log("Название мероприятия установлено:", event.name);
+    } else {
+        console.error("Элемент event-info-name не найден");
+    }
+
+    // Форматирование даты и времени
+    let formattedDate = event.date;
+    let formattedTime = event.time;
+    
+    if (event.date && event.time) {
+        try {
+            const dateObj = new Date(`${event.date}T${event.time}`);
+            formattedDate = dateObj.toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            formattedTime = dateObj.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            console.error("Ошибка форматирования даты/времени:", e);
+        }
+    }
+
+    // Установка даты, времени и адреса
+    const dateElement = document.getElementById("event-info-date");
+    if (dateElement) {
+        dateElement.textContent = `Дата: ${formattedDate}`;
+    }
+
+    const timeElement = document.getElementById("event-info-time");
+    if (timeElement) {
+        timeElement.textContent = `Время: ${formattedTime}`;
+    }
+
+    const locationElement = document.getElementById("event-info-location");
+    if (locationElement && event.location) {
+        locationElement.textContent = `Место проведения: ${event.location}`;
+    }
+
+    const eventDescriptionElement = document.getElementById("event-info-description");
+    if (eventDescriptionElement) {
+        eventDescriptionElement.textContent = event.description || '';
+    }
+
+    // Получаем элементы для отображения статуса регистрации
+    const notAuthMsg = document.getElementById('not-authenticated');
+    const alreadyRegisteredMsg = document.getElementById('already-registered');
+    const registerFormContainer = document.getElementById('register-form-container');
+    const registerForm = document.getElementById('register-form');
+
+    // Скрываем все элементы по умолчанию
+    if (notAuthMsg) notAuthMsg.style.display = 'none';
+    if (alreadyRegisteredMsg) alreadyRegisteredMsg.style.display = 'none';
+    if (registerFormContainer) registerFormContainer.style.display = 'none';
+
+    // Проверяем авторизацию пользователя
+    const user = JSON.parse(localStorage.getItem('loggedInUser'));
+    if (!user) {
+        if (notAuthMsg) notAuthMsg.style.display = 'block';
+    } else {
+        // Проверяем, зарегистрирован ли пользователь на мероприятие
+        const registrations = JSON.parse(localStorage.getItem('registrations') || '{}');
+        const isRegistered = (registrations[event.name] || []).some(reg => reg.user === user.email);
+        
+        if (isRegistered) {
+            if (alreadyRegisteredMsg) alreadyRegisteredMsg.style.display = 'block';
+        } else {
+            if (registerFormContainer) registerFormContainer.style.display = 'block';
+            if (registerForm) {
+                registerForm.onsubmit = function(e) {
+                    e.preventDefault();
+                    const firstName = document.getElementById('user-firstname').value;
+                    const lastName = document.getElementById('user-lastname').value;
+                    const userClass = document.getElementById('user-class').value;
+
+                    const registrationData = {
+                        user: user.email,
+                        firstName,
+                        lastName,
+                        userClass,
+                        eventName: event.name,
+                        registeredAt: new Date().toISOString()
+                    };
+
+                    if (!registrations[event.name]) {
+                        registrations[event.name] = [];
+                    }
+                    registrations[event.name].push(registrationData);
+                    localStorage.setItem('registrations', JSON.stringify(registrations));
+
+                    alert('Вы успешно зарегистрированы на мероприятие!');
+                    closeEventInfoModal();
+                };
+            }
+        }
+    }
+
+    const modal = document.getElementById("event-info-modal");
+    if (modal) {
+        modal.style.display = "block";
+    } else {
+        console.error("Модальное окно не найдено");
+    }
 }
 
 // Закрытие модального окна с информацией о мероприятии

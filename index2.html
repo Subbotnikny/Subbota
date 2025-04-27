@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Школьные мероприятия</title>
+    <link rel="icon" href="Logo.png" type="image/x-icon">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Для того, чтобы окно можно было перетаскивать */
+        .modal-content {
+            cursor: move; /* Указатель при наведении на окно */
+        }
+
+        /* Скроллбар внутри модального окна */
+        .scrollable-modal {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+
+        .modal {
+            display: none; /* Скрыто по умолчанию */
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            overflow: auto; /* Добавляет скроллбар при необходимости */
+            max-height: 90vh; /* Чтобы не выходило за экран */
+            /*background-color: white;*/
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            padding: 20px;
+        }
+
+        .section {
+            display: none;
+        }
+        
+        /* Обёртка содержимого модального окна */
+        .modal-content {
+            max-height: 80vh;
+            overflow-y: auto; /* Скроллбар внутри контента */
+        }
+        
+        
+        .scrollable-modal {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        /* Стили для кнопки выбора файла и предварительного просмотра изображения */
+        .file-upload {
+            display: inline-block;
+            cursor: pointer;
+            background-color: rgb(0, 59, 50);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .file-upload:hover {
+            background-color: rgb(0, 51, 42);
+        }
+
+        .file-upload input[type="file"] {
+            display: none; /* Скрыть стандартный input */
+        }
+
+        .image-preview {
+            margin-top: 20px;
+            display: none; /* Скрыть по умолчанию */
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Стили для выбора даты и времени */
+        .date-time-picker {
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-time-picker label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="date"], input[type="time"] {
+            padding: 10px;
+            border: 1px solid rgb(0, 59, 50);
+            border-radius: 5px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="date"]:focus, input[type="time"]:focus {
+            border-color: rgb(0, 51, 42);
+            outline: none;
+        }
+
+        /* Стили для сообщений о статусе регистрации */
+        .registration-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .not-authenticated {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        .already-registered {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div id="video-container">
+            <video id="header-video" autoplay muted>
+                <source src="kl.mp4" type="video/mp4">
+            </video>
+        </div>
+        <h1>Школьные мероприятия</h1>
+        <nav>
+            <ul>
+                <li><button onclick="showSection('calendar')">Календарь мероприятий</button></li>
+                <li><button onclick="showSection('contact')">Обратная связь</button></li>
+                <li><button onclick="showSection('auth')">Вход/Регистрация</button></li>
+                <li id="user-info">
+                    <span id="user-email"></span>
+                    <button onclick="logout()">Выйти</button>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Модальное окно подтверждения удаления -->
+        <div id="confirm-modal" class="modal" >
+            <div class="modal-content">
+                <span class="close" onclick="closeConfirmModal()">&times;</span>
+                <h2>Подтверждение</h2>
+                <p>Вы уверены, что хотите удалить это мероприятие?</p>
+                <button id="confirm-delete-button">Удалить</button>
+                <button onclick="closeConfirmModal()">Отмена</button>
+            </div>
+        </div>
+
+        <!-- Модальное окно для регистрации -->
+        <!-- <div id="register-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeRegisterModal()">&times;</span>
+                <h2>Регистрация на мероприятие</h2>
+                <div id="register-message" class="section"></div>
+                <form id="register-form" class="section">
+                    <label for="user-firstname">Имя:</label>
+                    <input type="text" id="user-firstname" required>
+                    <label for="user-lastname">Фамилия:</label>
+                    <input type="text" id="user-lastname" required>
+                    <label for="user-class">Класс:</label>
+                    <input type="text" id="user-class" required>
+                    <button type="submit">Зарегистрироваться</button>
+                </form>
+                <button id="close-register-modal" onclick="closeRegisterModal()">Закрыть</button>
+            </div>
+        </div> -->
+
+
+        <!-- Модальное окно уведомления -->
+        <div id="notification-modal" class="modal" >
+            <div class="modal-content">
+                <span class="close" onclick="closeNotificationModal()">&times;</span>
+                <p id="notification-message"></p>
+            </div>
+        </div>
+
+        <!-- Раздел Календарь мероприятий -->
+        <section id="calendar">
+            <h2>Добро пожаловать на сайт школьных мероприятий!</h2>
+            <div id="event-list">
+                <h3>Предстоящие мероприятия:</h3>
+                <!-- Мероприятия будут загружены здесь -->
+            </div>
+            <div id="admin-controls" >
+                <button onclick="addOrEditEvent(event)">Добавить мероприятие</button>
+            </div>
+        </section>
+
+        <!-- Раздел Обратная связь -->
+        <section id="contact" class="section">
+            <h2>Обратная связь</h2>
+            <form id="feedback-form">
+                <label for="name">Имя:</label>
+                <input type="text" id="name" required>
+                <label for="message">Сообщение:</label>
+                <textarea id="message" required></textarea>
+                <button type="submit">Отправить</button>
+            </form>
+        </section>
+
+        <div id="event-info-modal" class="modal" >
+            <div class="modal-content draggable" >
+                <span class="close" onclick="closeEventInfoModal()">&times;</span>
+                <h2 id="event-info-name" style="font-weight: bold;"></h2>
+                <div class="event-details">
+                    <p id="event-info-date"></p>
+                    <p id="event-info-time"></p>
+                    <p id="event-info-location"></p>
+                </div>
+                <p id="event-info-description"></p>
+                
+                <div id="not-authenticated" class="registration-status not-authenticated" style="display: none;">
+                    Для регистрации на мероприятие необходимо войти в систему
+                </div>
+                
+                <div id="already-registered" class="registration-status already-registered" style="display: none;">
+                    Вы уже зарегистрированы на это мероприятие
+                </div>
+                
+                <div id="register-form-container">
+                    <h3>Регистрация на мероприятие</h3>
+                    <form id="register-form">
+                        <label for="user-firstname">Имя:</label>
+                        <input type="text" id="user-firstname" required>
+                        <label for="user-lastname">Фамилия:</label>
+                        <input type="text" id="user-lastname" required>
+                        <label for="user-class">Класс:</label>
+                        <input type="text" id="user-class" required>
+                        <button type="submit">Зарегистрироваться</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        
+
+        <!-- Раздел Вход / Регистрация -->
+        <section id="auth" class="section">
+            <h2>Вход / Регистрация</h2>
+            <form id="auth-form">
+                <label for="email">Электронная почта:</label>
+                <input type="email" id="email" required>
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" required>
+                <button type="submit">Войти</button>
+                <button type="button" id="register-button">Зарегистрироваться</button>
+            </form>
+            <div class="g-signin2" data-onsuccess="onSignIn"></div>
+            <p id="auth-message"></p>
+        </section>
+
+        <!-- Модальное окно добавления/редактирования мероприятия -->
+        <div id="modal" class="modal" >
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2>Добавить мероприятие</h2>
+                <form id="event-form" onsubmit="addOrEditEvent(event)">
+                    <label for="event-name">Название мероприятия:</label>
+                    <input type="text" id="event-name" required>
+                    
+                    <div class="date-time-picker">
+                        <label for="event-date">Дата начала:</label>
+                        <input type="date" id="event-date" required>
+                    </div>
+
+                    <div class="date-time-picker">
+                        <label for="event-time">Время начала:</label>
+                        <input type="time" id="event-time" required>
+                    </div>
+                    
+                    <label class="file-upload">
+                        <input type="file" id="event-image" accept="image/*">
+                        <span class="file-upload-text">Выбрать файл</span>
+                    </label>
+                    <div class="image-preview" id="image-preview"></div>
+
+                    <label for="event-description">Описание мероприятия:</label>
+                    <textarea id="event-description" required></textarea>
+
+                    <button type="submit">Сохранить</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Школа. Все права защищены.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Инициализация страницы
+        loadUser();
+        loadEvents();
+    </script>
+</body>
+</html>
